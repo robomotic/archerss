@@ -147,6 +147,22 @@ All standard chess rules apply, with the addition of the ARCHER pieces:
 - Archers can be captured by enemy pieces
 - The goal remains to checkmate the opponent's king
 
+## Game Features
+
+### Visual Enhancements
+
+- **Legal Move Highlighting**: When you hover over or drag a piece, all legal moves for that piece are highlighted on the board
+- **Interactive Drag and Drop**: Drag pieces to move them, with automatic validation
+- **Real-time Status Updates**: Current game state, FEN notation, and PGN are displayed and updated after each move
+- **Move Validation**: Illegal moves are automatically rejected with a "snapback" animation
+
+### Archer-Specific Behavior
+
+- Archers show king-like movement patterns when highlighted (8 adjacent squares)
+- Archers cannot move to squares occupied by enemy pieces (no capture highlighting)
+- Empty squares around the archer are highlighted as valid moves
+- Enemy pieces adjacent to archers are not threatened and can move freely
+
 ## Technical Notes
 
 - Based on chess.js library by Jeff Hlywa

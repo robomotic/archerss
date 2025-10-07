@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <title>Archess example</title>
-  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+  <link rel="stylesheet" href="./css/chessboard-1.0.0.css">
 </head>
 <body>
 
@@ -32,7 +32,44 @@ var $status = $('#status')
 var $fen = $('#fen')
 var $pgn = $('#pgn')
 
+function removeHighlights () {
+  $('#myBoard .square-55d63').removeClass('highlight-possible-move')
+}
+
+function highlightPossibleMoves (square) {
+  console.log('=== highlightPossibleMoves called ===')
+  console.log('Square:', square)
+  
+  // Check what piece is actually on this square
+  var pieceOnSquare = game.get(square)
+  console.log('Piece on square from game.get():', pieceOnSquare)
+  
+  // get list of possible moves for this square
+  var moves = game.moves({
+    square: square,
+    verbose: true
+  })
+
+  console.log('Number of legal moves:', moves.length)
+  console.log('Legal moves:', moves)
+
+  // exit if there are no moves available for this square
+  if (moves.length === 0) return
+
+  // highlight the possible squares for this piece
+  for (var i = 0; i < moves.length; i++) {
+    console.log('Highlighting square:', moves[i].to)
+    $('#myBoard .square-' + moves[i].to).addClass('highlight-possible-move')
+  }
+}
+
 function onDragStart (source, piece, position, orientation) {
+  console.log('=== onDragStart called ===')
+  console.log('Source square:', source)
+  console.log('Piece parameter:', piece)
+  console.log('Current turn:', game.turn())
+  console.log('Current FEN:', game.fen())
+  
   // do not pick up pieces if the game is over
   if (game.game_over()) return false
 
@@ -41,9 +78,19 @@ function onDragStart (source, piece, position, orientation) {
       (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
     return false
   }
+
+  // highlight possible moves
+  highlightPossibleMoves(source)
 }
 
 function onDrop (source, target) {
+  console.log('=== onDrop called ===')
+  console.log('Source:', source)
+  console.log('Target:', target)
+  
+  // remove highlights
+  removeHighlights()
+
   // see if the move is legal
   var move = game.move({
     from: source,
@@ -51,10 +98,45 @@ function onDrop (source, target) {
     promotion: 'q' // NOTE: always promote to a queen for example simplicity
   })
 
-  // illegal move
-  if (move === null) return 'snapback'
+  console.log('Move result:', move)
 
+  // illegal move
+  if (move === null) {
+    console.log('Move was ILLEGAL - snapback')
+    return 'snapback'
+  }
+
+  console.log('Move was LEGAL')
   updateStatus()
+}
+
+function onMouseoverSquare (square, piece) {
+  console.log('=== onMouseoverSquare called ===')
+  console.log('Square:', square)
+  console.log('Piece parameter:', piece)
+  
+  // get list of possible moves for this square
+  var moves = game.moves({
+    square: square,
+    verbose: true
+  })
+
+  console.log('Moves for hover:', moves)
+
+  // exit if there are no moves available for this square
+  if (moves.length === 0) return
+
+  // highlight the square they moused over
+  $('#myBoard .square-' + square).addClass('highlight-possible-move')
+
+  // highlight the possible squares for this piece
+  for (var i = 0; i < moves.length; i++) {
+    $('#myBoard .square-' + moves[i].to).addClass('highlight-possible-move')
+  }
+}
+
+function onMouseoutSquare (square, piece) {
+  removeHighlights()
 }
 
 // update the board position after the piece snap
@@ -107,6 +189,8 @@ var config = {
   pieceTheme: pieceTheme,
   onDragStart: onDragStart,
   onDrop: onDrop,
+  onMouseoutSquare: onMouseoutSquare,
+  onMouseoverSquare: onMouseoverSquare,
   onSnapEnd: onSnapEnd
 }
 
