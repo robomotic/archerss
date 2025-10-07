@@ -20,18 +20,18 @@ The ARCHER is a unique chess piece with the following characteristics:
 
 ```
 8 | r n b q k b n r
-7 | p p a p a p p p
+7 | p p a p p a p p
 6 | . . . . . . . .
 5 | . . . . . . . .
 4 | . . . . . . . .
 3 | . . . . . . . .
-2 | P P A P A P P P
+2 | P P A P P A P P
 1 | R N B Q K B N R
   +----------------
     a b c d e f g h
 ```
 
-FEN Notation: `rnbqkbnr/ppapappp/8/8/8/8/PPAPAPPP/RNBQKBNR w KQkq - 0 1`
+FEN Notation: `rnbqkbnr/ppappapp/8/8/8/8/PPAPPAPP/RNBQKBNR w KQkq - 0 1`
 
 ## Implementation Details
 

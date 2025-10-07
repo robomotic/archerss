@@ -52,7 +52,7 @@ var Chess = function(fen) {
 
   var SYMBOLS = 'pnbrqkaPNBRQKA';
 
-  var DEFAULT_POSITION = 'rnbqkbnr/ppapappp/8/8/8/8/PPAPAPPP/RNBQKBNR w KQkq - 0 1';
+  var DEFAULT_POSITION = 'rnbqkbnr/ppappapp/8/8/8/8/PPAPPAPP/RNBQKBNR w KQkq - 0 1';
 
   var POSSIBLE_RESULTS = ['1-0', '0-1', '1/2-1/2', '*'];
 

@@ -8,8 +8,6 @@
 </head>
 <body>
 
-<p>You can integrate chessboard.js with the <a href="https://github.com/jhlywa/chess.js">chess.js</a> library to only allow legal moves.</p>
-
 <!--- Begin Example HTML ------------------------------------------------------>
 <div id="myBoard" style="width: 400px"></div>
 <label>Status:</label>
@@ -21,7 +19,7 @@
 <!--- End Example HTML -------------------------------------------------------->
 
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js" integrity="sha384-8Vi8VHwn3vjQ9eUHUxex3JSN/NFqUg3QbPyX8kWyb93+8AC/pPWTzj+nHtbC5bxD" crossorigin="anonymous"></script>
+<script src="chessboard-1.0.0.js" ></script>
 <script src="chess.js"></script>
 <script>
 // --- Begin Example JS --------------------------------------------------------
@@ -98,13 +96,20 @@ function updateStatus () {
   $pgn.html(game.pgn())
 }
 
+function pieceTheme (piece) {
+  // Custom path for all pieces including archers
+  return 'img/chesspieces/wikipedia/' + piece + '.png'
+}
+
 var config = {
   draggable: true,
-  position: 'start',
+  position: game.fen(), // Use the FEN from our modified Chess game with archers
+  pieceTheme: pieceTheme,
   onDragStart: onDragStart,
   onDrop: onDrop,
   onSnapEnd: onSnapEnd
 }
+
 board = Chessboard('myBoard', config)
 
 updateStatus()
