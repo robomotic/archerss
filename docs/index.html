@@ -3,19 +3,166 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-  <title>Archess example</title>
+  <title>Archerss - Chess with Archer Pieces</title>
   <link rel="stylesheet" href="./css/chessboard-1.0.0.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2c3e50;
+      margin-top: 0;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+    }
+    .subtitle {
+      color: #7f8c8d;
+      font-size: 1.2em;
+      margin-bottom: 20px;
+    }
+    .info-section {
+      background-color: #ecf0f1;
+      padding: 20px;
+      border-radius: 5px;
+      margin-bottom: 30px;
+    }
+    .info-section h2 {
+      color: #2c3e50;
+      margin-top: 0;
+      font-size: 1.3em;
+    }
+    .archer-rules {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .rule-card {
+      background-color: white;
+      padding: 15px;
+      border-radius: 5px;
+      border-left: 4px solid #3498db;
+    }
+    .rule-card strong {
+      color: #2c3e50;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .game-board {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    #myBoard {
+      flex-shrink: 0;
+    }
+    .game-info {
+      flex: 1;
+      min-width: 300px;
+    }
+    .info-box {
+      background-color: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    .info-box label {
+      font-weight: bold;
+      color: #2c3e50;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .info-box div {
+      font-family: 'Courier New', monospace;
+      background-color: white;
+      padding: 10px;
+      border-radius: 3px;
+      word-break: break-all;
+    }
+    #status {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #27ae60;
+    }
+    .highlight-possible-move {
+      box-shadow: inset 0 0 20px rgba(52, 152, 219, 0.5);
+      background-color: rgba(52, 152, 219, 0.2) !important;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>🏹 Archerss - Chess with Archer Pieces</h1>
+    <p class="subtitle">A unique chess variant featuring the Archer - a piece that moves like a king but cannot capture!</p>
+    
+    <div class="info-section">
+      <h2>About the Archer Piece</h2>
+      <p>The <strong>Archer</strong> is a new chess piece with unique characteristics that adds a fresh strategic dimension to traditional chess.</p>
+      
+      <div class="archer-rules">
+        <div class="rule-card">
+          <strong>📍 Starting Position</strong>
+          White: C2 and F2<br>
+          Black: C7 and F7
+        </div>
+        <div class="rule-card">
+          <strong>♟️ Movement</strong>
+          Moves one square in any direction (like a king)
+        </div>
+        <div class="rule-card">
+          <strong>🛡️ Special Ability</strong>
+          Cannot capture any pieces - moves only to empty squares
+        </div>
+        <div class="rule-card">
+          <strong>⚔️ Defense</strong>
+          Does not threaten enemy pieces; can be captured by any piece
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h2>How to Play</h2>
+      <ul>
+        <li><strong>Drag pieces</strong> to move them on the board</li>
+        <li><strong>Hover over pieces</strong> to see their legal moves highlighted</li>
+        <li>Archers show <strong>king-like movement</strong> but can't move to occupied squares</li>
+        <li>All standard chess rules apply, including checkmate and castling</li>
+        <li>The goal is to <strong>checkmate the opponent's king</strong></li>
+      </ul>
+    </div>
 
 <!--- Begin Example HTML ------------------------------------------------------>
-<div id="myBoard" style="width: 400px"></div>
-<label>Status:</label>
-<div id="status"></div>
-<label>FEN:</label>
-<div id="fen"></div>
-<label>PGN:</label>
-<div id="pgn"></div>
+    <div class="game-board">
+      <div id="myBoard" style="width: 400px"></div>
+      
+      <div class="game-info">
+        <div class="info-box">
+          <label>Status:</label>
+          <div id="status"></div>
+        </div>
+        
+        <div class="info-box">
+          <label>FEN:</label>
+          <div id="fen"></div>
+        </div>
+        
+        <div class="info-box">
+          <label>PGN:</label>
+          <div id="pgn"></div>
+        </div>
+      </div>
+    </div>
 <!--- End Example HTML -------------------------------------------------------->
 
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
@@ -199,5 +346,15 @@ board = Chessboard('myBoard', config)
 updateStatus()
 // --- End Example JS ----------------------------------------------------------
 </script>
+
+<footer style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d;">
+  <p>
+    <strong>Archerss</strong> - A chess variant with archer pieces<br>
+    Based on <a href="https://github.com/jhlywa/chess.js" target="_blank">chess.js</a> by Jeff Hlywa and 
+    <a href="https://chessboardjs.com/" target="_blank">chessboard.js</a> by Chris Oakman
+  </p>
+</footer>
+
+</div>
 </body>
 </html>
