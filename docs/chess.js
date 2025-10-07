@@ -583,14 +583,15 @@ var Chess = function(fen) {
           }
         }
         
-        // Attack 2 cells vertically (up and down)
+        // Attack 2 cells vertically (up and down) - CANNOT be blocked
         var verticalOffsets = [-32, 32]; // 2 squares up, 2 squares down
         for (var j = 0; j < verticalOffsets.length; j++) {
           var square = i + verticalOffsets[j];
           
           if (square & 0x88) continue;
           
-          // Can attack enemy pieces at 2 cells vertically including kings (archer stays in place)
+          // Can attack enemy pieces at 2 cells vertically (archer stays in place)
+          // Path does NOT need to be clear - ranged attacks cannot be blocked
           if (board[square] != null && board[square].color === them) {
             add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
           }
@@ -750,25 +751,17 @@ var Chess = function(fen) {
       // Special handling for ARCHER ranged attacks
       if (piece.type === ARCHER) {
         // Check if square is within archer's attack range
-        // 1. Adjacent squares (1 cell in all 8 directions)
+        // 1. Adjacent squares (1 cell in all 8 directions) - cannot be blocked
         var adjacentOffsets = [-17, -16, -15, 1, 17, 16, 15, -1];
         for (var k = 0; k < adjacentOffsets.length; k++) {
           if (i + adjacentOffsets[k] === square) {
-            return true; // Archer threatens this square (1 cell, can't be blocked)
+            return true; // Archer threatens this square (1 cell, cannot be blocked)
           }
         }
         
-        // 2. Vertical squares (2 cells up or down) - CAN be blocked
-        if (i - 32 === square) {
-          // Check 2 cells up - make sure path is clear
-          if (board[i - 16] == null) {
-            return true; // Archer threatens this square (2 cells up, not blocked)
-          }
-        } else if (i + 32 === square) {
-          // Check 2 cells down - make sure path is clear
-          if (board[i + 16] == null) {
-            return true; // Archer threatens this square (2 cells down, not blocked)
-          }
+        // 2. Vertical squares (2 cells up or down) - CANNOT be blocked (ranged attack)
+        if (i - 32 === square || i + 32 === square) {
+          return true; // Archer threatens this square (2 cells vertical, cannot be blocked)
         }
         
         continue; // Move to next piece
