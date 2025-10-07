@@ -9,7 +9,7 @@ var initialFen = game.fen();
 console.log('Test 1 - Initial Position:');
 console.log('FEN:', initialFen);
 console.log('Expected archers at c2, f2, c7, f7');
-console.log('Actual FEN shows:', initialFen.includes('PPAPAPPP') && initialFen.includes('ppapappp') ? 'PASS ✓' : 'FAIL ✗');
+console.log('Actual FEN shows:', initialFen.includes('PPAPPAPP') && initialFen.includes('ppappapp') ? 'PASS ✓' : 'FAIL ✗');
 console.log();
 
 // Test 2: Archer should be able to move like a king
@@ -22,8 +22,8 @@ moves.forEach(function(move) {
 console.log('Archer can move:', moves.length > 0 ? 'PASS ✓' : 'FAIL ✗');
 console.log();
 
-// Test 3: Archer should NOT be able to capture
-console.log('Test 3 - Archer Cannot Capture:');
+// Test 3: Archer should NOT be able to capture by moving (but CAN attack at range)
+console.log('Test 3 - Archer Cannot Capture by Moving:');
 // Set up a position where an enemy piece is adjacent to archer
 game.clear();
 game.put({ type: 'a', color: 'w' }, 'e4');  // White archer at e4
@@ -37,13 +37,18 @@ console.log('FEN:', game.fen());
 var archerMoves = game.moves({ square: 'e4', verbose: true });
 console.log('Legal moves for white archer at e4:');
 archerMoves.forEach(function(move) {
-  console.log('  ', move.san, '(' + move.from + ' -> ' + move.to + ')', move.flags.includes('c') ? '[CAPTURE]' : '');
+  console.log('  ', move.san, '(' + move.from + ' -> ' + move.to + ')', move.san.includes('*') ? '[RANGED ATTACK]' : '');
 });
 
-var hasCapture = archerMoves.some(function(move) {
-  return move.to === 'e5';
+// Check that there's a ranged attack move (with *) but no regular move to e5
+var hasRangedAttack = archerMoves.some(function(move) {
+  return move.to === 'e5' && move.san.includes('*');
 });
-console.log('Archer cannot capture adjacent enemy piece:', !hasCapture ? 'PASS ✓' : 'FAIL ✗');
+var hasRegularMove = archerMoves.some(function(move) {
+  return move.to === 'e5' && !move.san.includes('*');
+});
+console.log('Archer can ranged attack:', hasRangedAttack ? 'PASS ✓' : 'FAIL ✗');
+console.log('Archer cannot move onto enemy piece:', !hasRegularMove ? 'PASS ✓' : 'FAIL ✗');
 console.log();
 
 // Test 4: Archer should move to empty squares

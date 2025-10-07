@@ -8,8 +8,14 @@ The ARCHER is a unique chess piece with the following characteristics:
 
 - **Symbol**: `a` (lowercase for black, `A` for uppercase white)
 - **Movement**: Moves like a KING - one square in any direction (horizontally, vertically, or diagonally)
-- **Special Property**: **Cannot capture any pieces** - the archer can only move to empty squares
-- **Attack**: Does not attack/threaten any squares, so enemy pieces (including kings) can safely stand adjacent to archers
+- **Special Property**: **Cannot capture pieces by moving** - the archer can only move to empty squares
+- **Ranged Attack**: Can attack enemy pieces without moving from its position:
+  - Attack range: **1 cell in any direction** (8 adjacent squares), OR
+  - Attack range: **2 cells vertically** (straight up or down)
+  - When attacking, the archer **stays in its original position**
+  - The attacked piece is removed from the board
+  - Notation: Uses `*` symbol (e.g., `Ac2*e2` means archer at c2 attacks piece at e2)
+- **Threat**: Does not threaten squares for check purposes, so enemy kings can safely stand adjacent to archers
 
 ### Starting Positions
 
@@ -62,17 +68,39 @@ FEN Notation: `rnbqkbnr/ppappapp/8/8/8/8/PPAPPAPP/RNBQKBNR w KQkq - 0 1`
    { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5, a: 6 }
    ```
 
-6. **Updated FEN validation regex**
+6. **Added ARCHER_ATTACK flag**
+   ```javascript
+   BITS.ARCHER_ATTACK = 0x80  // 128
+   ```
+   - Special flag to distinguish ranged attacks from normal moves
+   - Used in move generation, execution, and notation
+
+7. **Updated FEN validation regex**
    - Changed from `/^[prnbqkPRNBQK]$/`
    - To `/^[prnbqkaPRNBRQKA]$/`
 
-7. **Modified move generation logic**
-   - Added condition to prevent ARCHER from capturing pieces
-   - Added ARCHER to single-square movement pieces (like knight and king)
+8. **Modified move generation logic**
+   - Archers generate normal movement to empty adjacent squares
+   - Archers generate ranged attacks to enemy pieces within range:
+     - All 8 adjacent squares (1 cell away)
+     - 2 cells vertically up or down
+   - Attacks are marked with `ARCHER_ATTACK` flag
 
-8. **Modified attack detection**
-   - Added check to skip archers when determining attacked squares
-   - This allows enemy kings to stand adjacent to archers
+9. **Modified move execution (`make_move`)**
+   - Normal moves: piece moves from source to destination
+   - Archer attacks: target piece removed, archer stays at source position
+
+10. **Modified move undo (`undo_move`)**
+    - Normal moves: piece moves back to original position
+    - Archer attacks: captured piece restored, archer already at original position
+
+11. **Modified SAN notation (`move_to_san`)**
+    - Archer ranged attacks use `*` symbol instead of `x`
+    - Example: `Ac2*e2` means archer at c2 attacks piece at e2
+
+12. **Modified attack detection**
+    - Added check to skip archers when determining attacked squares
+    - This allows enemy kings to stand adjacent to archers (no check from archers)
 
 ### Changes Made to chessboard-1.0.0.js
 
@@ -179,12 +207,40 @@ All tests completed!
 
 All standard chess rules apply, with the addition of the ARCHER pieces:
 
-- Archers move one square in any direction (like kings)
-- Archers cannot capture enemy pieces
-- Archers do not threaten or attack any squares
+- Archers move one square in any direction (like kings) to empty squares only
+- Archers cannot capture enemy pieces by moving onto them
+- Archers can perform **ranged attacks**:
+  - Attack any enemy piece within 1 cell (8 adjacent squares)
+  - Attack any enemy piece 2 cells vertically up or down
+  - When attacking, the archer remains in its original position
+  - The attacked piece is removed from the board
+- Archers do not threaten or attack squares for check purposes
 - Enemy pieces can safely occupy squares adjacent to archers
 - Archers can be captured by enemy pieces
 - The goal remains to checkmate the opponent's king
+
+### Ranged Attack Examples
+
+```
+Example 1 - Adjacent Attack:
+. . . . .     . . . . .
+. A . . .  →  . A . . .
+. . p . .     . . . . .
+. . . . .     . . . . .
+
+White archer at b7 attacks black pawn at c6.
+Move notation: Ab7*c6
+
+Example 2 - Vertical Attack (2 cells):
+. . . . .     . . . . .
+. . p . .     . . . . .
+. . . . .  →  . . . . .
+. . A . .     . . A . .
+. . . . .     . . . . .
+
+White archer at c5 attacks black pawn at c7.
+Move notation: Ac5*c7
+```
 
 ## Game Features
 
@@ -197,10 +253,12 @@ All standard chess rules apply, with the addition of the ARCHER pieces:
 
 ### Archer-Specific Behavior
 
-- Archers show king-like movement patterns when highlighted (8 adjacent squares)
-- Archers cannot move to squares occupied by enemy pieces (no capture highlighting)
+- Archers show king-like movement patterns when highlighted (8 adjacent squares for movement)
+- Archers can perform ranged attacks on enemy pieces within attack range
+- Attack moves are shown alongside regular movement options
 - Empty squares around the archer are highlighted as valid moves
-- Enemy pieces adjacent to archers are not threatened and can move freely
+- Squares with enemy pieces within attack range are highlighted as attack targets
+- Enemy pieces adjacent to archers are not threatened for check purposes
 
 ## Technical Notes
 

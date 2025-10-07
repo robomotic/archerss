@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Archer Ranged Attack Demo</title>
+  <link rel="stylesheet" href="css/chessboard-1.0.0.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    h1 { color: #333; }
+    .board-container { 
+      width: 500px; 
+      margin: 20px 0;
+    }
+    .info {
+      background: #f0f0f0;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+    .moves {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+    }
+    .highlight-possible-move {
+      background-color: yellow !important;
+      opacity: 0.4;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🏹 Archer Ranged Attack Demo</h1>
+
+<div class="info">
+  <h3>Ranged Attack Rules:</h3>
+  <ul>
+    <li><strong>1 cell attack:</strong> All 8 adjacent squares (horizontal, vertical, diagonal)</li>
+    <li><strong>2 cell attack:</strong> Only vertically up or down</li>
+    <li><strong>Attack notation:</strong> Uses * symbol (e.g., Ac2*e2)</li>
+    <li><strong>Position:</strong> Archer stays in place after attacking</li>
+  </ul>
+</div>
+
+<div>
+  <button onclick="loadDemo1()">Demo 1: Adjacent Attack</button>
+  <button onclick="loadDemo2()">Demo 2: Vertical Attack (2 cells)</button>
+  <button onclick="loadDemo3()">Demo 3: Multiple Targets</button>
+  <button onclick="resetBoard()">Reset to Start</button>
+</div>
+
+<div class="board-container">
+  <div id="board"></div>
+</div>
+
+<div class="info">
+  <h3>Current Position:</h3>
+  <div id="status"></div>
+  <div id="fen"></div>
+</div>
+
+<div class="info">
+  <h3>Move History:</h3>
+  <div id="moves" class="moves"></div>
+</div>
+
+<div class="info">
+  <h3>Hover over pieces to see legal moves (yellow highlights)</h3>
+  <div id="legal-moves"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="chessboard-1.0.0.js"></script>
+<script src="chess.js"></script>
+
+<script>
+var board = null;
+var game = new Chess();
+
+// Custom piece theme with archer
+function customPieceTheme(piece) {
+  var pieceImages = {
+    'wP': 'img/chesspieces/wikipedia/wP.png',
+    'wN': 'img/chesspieces/wikipedia/wN.png',
+    'wB': 'img/chesspieces/wikipedia/wB.png',
+    'wR': 'img/chesspieces/wikipedia/wR.png',
+    'wQ': 'img/chesspieces/wikipedia/wQ.png',
+    'wK': 'img/chesspieces/wikipedia/wK.png',
+    'wA': 'img/chesspieces/wikipedia/wA.png',
+    'bP': 'img/chesspieces/wikipedia/bP.png',
+    'bN': 'img/chesspieces/wikipedia/bN.png',
+    'bB': 'img/chesspieces/wikipedia/bB.png',
+    'bR': 'img/chesspieces/wikipedia/bR.png',
+    'bQ': 'img/chesspieces/wikipedia/bQ.png',
+    'bK': 'img/chesspieces/wikipedia/bK.png',
+    'bA': 'img/chesspieces/wikipedia/bA.png'
+  };
+  return pieceImages[piece];
+}
+
+function removeHighlights() {
+  $('#board .square-55d63').removeClass('highlight-possible-move');
+}
+
+function highlightPossibleMoves(square) {
+  var moves = game.moves({
+    square: square,
+    verbose: true
+  });
+
+  if (moves.length === 0) return;
+
+  for (var i = 0; i < moves.length; i++) {
+    $('#board .square-' + moves[i].to).addClass('highlight-possible-move');
+  }
+  
+  // Update legal moves display
+  var moveList = moves.map(function(m) {
+    return m.san + (m.san.includes('*') ? ' [RANGED ATTACK]' : '');
+  }).join(', ');
+  $('#legal-moves').html('<strong>Legal moves:</strong> ' + moveList);
+}
+
+function onDragStart(source, piece, position, orientation) {
+  if (game.game_over()) return false;
+  if ((game.turn() === 'w' && piece.search(/^b/) !== -1) ||
+      (game.turn() === 'b' && piece.search(/^w/) !== -1)) {
+    return false;
+  }
+  
+  removeHighlights();
+  highlightPossibleMoves(source);
+}
+
+function onDrop(source, target) {
+  removeHighlights();
+  
+  var move = game.move({
+    from: source,
+    to: target,
+    promotion: 'q'
+  });
+
+  if (move === null) return 'snapback';
+
+  updateStatus();
+}
+
+function onMouseoverSquare(square, piece) {
+  if (piece) {
+    removeHighlights();
+    highlightPossibleMoves(square);
+  }
+}
+
+function onMouseoutSquare(square, piece) {
+  removeHighlights();
+  $('#legal-moves').html('');
+}
+
+function onSnapEnd() {
+  board.position(game.fen());
+}
+
+function updateStatus() {
+  var status = '';
+  var moveColor = 'White';
+  if (game.turn() === 'b') {
+    moveColor = 'Black';
+  }
+
+  if (game.in_checkmate()) {
+    status = 'Game over, ' + moveColor + ' is in checkmate.';
+  } else if (game.in_draw()) {
+    status = 'Game over, drawn position';
+  } else {
+    status = moveColor + ' to move';
+    if (game.in_check()) {
+      status += ', ' + moveColor + ' is in check';
+    }
+  }
+
+  $('#status').html('<strong>Status:</strong> ' + status);
+  $('#fen').html('<strong>FEN:</strong> ' + game.fen());
+  
+  var history = game.history();
+  var movesHtml = '';
+  for (var i = 0; i < history.length; i++) {
+    if (i % 2 === 0) {
+      movesHtml += '<br>' + (Math.floor(i/2) + 1) + '. ';
+    }
+    movesHtml += history[i] + ' ';
+  }
+  $('#moves').html(movesHtml || 'No moves yet');
+}
+
+// Demo scenarios
+function loadDemo1() {
+  // Archer with adjacent enemy pieces
+  game.clear();
+  game.put({ type: 'k', color: 'w' }, 'a1');
+  game.put({ type: 'k', color: 'b' }, 'h8');
+  game.put({ type: 'a', color: 'w' }, 'e4');
+  game.put({ type: 'p', color: 'b' }, 'e5');
+  game.put({ type: 'p', color: 'b' }, 'd5');
+  game.put({ type: 'p', color: 'b' }, 'f5');
+  board.position(game.fen());
+  updateStatus();
+  alert('Demo 1: White archer at e4 can attack 3 adjacent black pawns. Try hovering over the archer!');
+}
+
+function loadDemo2() {
+  // Archer with vertical 2-cell attack
+  game.clear();
+  game.put({ type: 'k', color: 'w' }, 'a1');
+  game.put({ type: 'k', color: 'b' }, 'h8');
+  game.put({ type: 'a', color: 'w' }, 'e4');
+  game.put({ type: 'p', color: 'b' }, 'e6');
+  game.put({ type: 'p', color: 'b' }, 'e2');
+  board.position(game.fen());
+  updateStatus();
+  alert('Demo 2: White archer at e4 can attack pawns 2 cells away vertically at e6 and e2. Hover to see!');
+}
+
+function loadDemo3() {
+  // Archer surrounded by targets
+  game.clear();
+  game.put({ type: 'k', color: 'w' }, 'a1');
+  game.put({ type: 'k', color: 'b' }, 'h8');
+  game.put({ type: 'a', color: 'w' }, 'd4');
+  game.put({ type: 'p', color: 'b' }, 'c5');
+  game.put({ type: 'p', color: 'b' }, 'd5');
+  game.put({ type: 'p', color: 'b' }, 'e5');
+  game.put({ type: 'p', color: 'b' }, 'c4');
+  game.put({ type: 'p', color: 'b' }, 'e4');
+  game.put({ type: 'p', color: 'b' }, 'c3');
+  game.put({ type: 'p', color: 'b' }, 'd3');
+  game.put({ type: 'p', color: 'b' }, 'e3');
+  game.put({ type: 'p', color: 'b' }, 'd6');
+  game.put({ type: 'p', color: 'b' }, 'd2');
+  board.position(game.fen());
+  updateStatus();
+  alert('Demo 3: Archer at d4 can attack all 8 adjacent pawns PLUS 2 more at d6 and d2 (vertical). That\'s 10 attacks!');
+}
+
+function resetBoard() {
+  game.reset();
+  board.start();
+  updateStatus();
+}
+
+var config = {
+  draggable: true,
+  position: 'start',
+  onDragStart: onDragStart,
+  onDrop: onDrop,
+  onMouseoutSquare: onMouseoutSquare,
+  onMouseoverSquare: onMouseoverSquare,
+  onSnapEnd: onSnapEnd,
+  pieceTheme: customPieceTheme
+};
+
+board = Chessboard('board', config);
+updateStatus();
+
+</script>
+
+</body>
+</html>

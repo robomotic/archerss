@@ -115,7 +115,8 @@ var Chess = function(fen) {
     EP_CAPTURE: 'e',
     PROMOTION: 'p',
     KSIDE_CASTLE: 'k',
-    QSIDE_CASTLE: 'q'
+    QSIDE_CASTLE: 'q',
+    ARCHER_ATTACK: 'a'
   };
 
   var BITS = {
@@ -125,7 +126,8 @@ var Chess = function(fen) {
     EP_CAPTURE: 8,
     PROMOTION: 16,
     KSIDE_CASTLE: 32,
-    QSIDE_CASTLE: 64
+    QSIDE_CASTLE: 64,
+    ARCHER_ATTACK: 128
   };
 
   var RANK_1 = 7;
@@ -552,6 +554,47 @@ var Chess = function(fen) {
               add_move(board, moves, i, ep_square, BITS.EP_CAPTURE);
           }
         }
+      } else if (piece.type === ARCHER) {
+        // Archer special movement and attack logic
+        // 1. Normal movement - one square in any direction to empty squares
+        for (var j = 0, len = PIECE_OFFSETS[ARCHER].length; j < len; j++) {
+          var offset = PIECE_OFFSETS[ARCHER][j];
+          var square = i + offset;
+          
+          if (square & 0x88) continue;
+          
+          // Can only move to empty squares
+          if (board[square] == null) {
+            add_move(board, moves, i, square, BITS.NORMAL);
+          }
+        }
+        
+        // 2. Ranged attack - within 1 cell around OR 2 cells vertically
+        // Attack within 1 cell (all 8 directions)
+        for (var j = 0, len = PIECE_OFFSETS[ARCHER].length; j < len; j++) {
+          var offset = PIECE_OFFSETS[ARCHER][j];
+          var square = i + offset;
+          
+          if (square & 0x88) continue;
+          
+          // Can attack enemy pieces (archer stays in place)
+          if (board[square] != null && board[square].color === them) {
+            add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
+          }
+        }
+        
+        // Attack 2 cells vertically (up and down)
+        var verticalOffsets = [-32, 32]; // 2 squares up, 2 squares down
+        for (var j = 0; j < verticalOffsets.length; j++) {
+          var square = i + verticalOffsets[j];
+          
+          if (square & 0x88) continue;
+          
+          // Can attack enemy pieces at 2 cells vertically (archer stays in place)
+          if (board[square] != null && board[square].color === them) {
+            add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
+          }
+        }
       } else {
         for (var j = 0, len = PIECE_OFFSETS[piece.type].length; j < len; j++) {
           var offset = PIECE_OFFSETS[piece.type][j];
@@ -565,15 +608,12 @@ var Chess = function(fen) {
               add_move(board, moves, i, square, BITS.NORMAL);
             } else {
               if (board[square].color === us) break;
-              // Archer cannot capture
-              if (piece.type !== ARCHER) {
-                add_move(board, moves, i, square, BITS.CAPTURE);
-              }
+              add_move(board, moves, i, square, BITS.CAPTURE);
               break;
             }
 
-            /* break, if knight or king or archer */
-            if (piece.type === 'n' || piece.type === 'k' || piece.type === ARCHER) break;
+            /* break, if knight or king */
+            if (piece.type === 'n' || piece.type === 'k') break;
           }
         }
       }
@@ -660,7 +700,10 @@ var Chess = function(fen) {
         output += move.piece.toUpperCase() + disambiguator;
       }
 
-      if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+      // Use * for archer ranged attacks, x for normal captures
+      if (move.flags & BITS.ARCHER_ATTACK) {
+        output += algebraic(move.from) + '*';
+      } else if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
         if (move.piece === PAWN) {
           output += algebraic(move.from)[0];
         }
@@ -846,8 +889,14 @@ var Chess = function(fen) {
     var them = swap_color(us);
     push(move);
 
-    board[move.to] = board[move.from];
-    board[move.from] = null;
+    /* if archer attack, remove the target piece but archer stays in place */
+    if (move.flags & BITS.ARCHER_ATTACK) {
+      board[move.to] = null;
+      // Archer doesn't move, so we don't modify board[move.from]
+    } else {
+      board[move.to] = board[move.from];
+      board[move.from] = null;
+    }
 
     /* if ep capture, remove the captured pawn */
     if (move.flags & BITS.EP_CAPTURE) {
@@ -864,7 +913,7 @@ var Chess = function(fen) {
     }
 
     /* if we moved the king */
-    if (board[move.to].type === KING) {
+    if (board[move.to] && board[move.to].type === KING) {
       kings[board[move.to].color] = move.to;
 
       /* if we castled, move the rook next to the king */
@@ -947,22 +996,28 @@ var Chess = function(fen) {
     var us = turn;
     var them = swap_color(turn);
 
-    board[move.from] = board[move.to];
-    board[move.from].type = move.piece;  // to undo any promotions
-    board[move.to] = null;
-
-    if (move.flags & BITS.CAPTURE) {
+    // Handle archer attacks differently - archer never moved
+    if (move.flags & BITS.ARCHER_ATTACK) {
+      // Restore the captured piece at the target square
       board[move.to] = {type: move.captured, color: them};
-    } else if (move.flags & BITS.EP_CAPTURE) {
-      var index;
-      if (us === BLACK) {
-        index = move.to - 16;
-      } else {
-        index = move.to + 16;
-      }
-      board[index] = {type: PAWN, color: them};
-    }
+      // Archer is already at move.from, no need to move it back
+    } else {
+      board[move.from] = board[move.to];
+      board[move.from].type = move.piece;  // to undo any promotions
+      board[move.to] = null;
 
+      if (move.flags & BITS.CAPTURE) {
+        board[move.to] = {type: move.captured, color: them};
+      } else if (move.flags & BITS.EP_CAPTURE) {
+        var index;
+        if (us === BLACK) {
+          index = move.to - 16;
+        } else {
+          index = move.to + 16;
+        }
+        board[index] = {type: PAWN, color: them};
+      }
+    }
 
     if (move.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
       var castling_to, castling_from;
