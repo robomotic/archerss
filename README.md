@@ -74,21 +74,60 @@ FEN Notation: `rnbqkbnr/ppappapp/8/8/8/8/PPAPPAPP/RNBQKBNR w KQkq - 0 1`
    - Added check to skip archers when determining attacked squares
    - This allows enemy kings to stand adjacent to archers
 
+### Changes Made to chessboard-1.0.0.js
+
+1. **Updated `validPieceCode()` function**
+   - Modified regex from `/^[bw][KQRNBP]$/` to `/^[bw][KQRNBPA]$/`
+   - Now accepts 'wA' (white archer) and 'bA' (black archer) as valid piece codes
+
+2. **Updated `validFen()` function**
+   - Modified regex from `/[^kqrnbpKQRNBP1]/` to `/[^kqrnbpaKQRNBPA1]/`
+   - FEN strings can now include 'a' and 'A' characters for archer pieces
+
+3. **Updated spare pieces**
+   - Modified spare pieces array from `'KQRNBP'` to `'KQRNBPA'`
+   - Archers now available in piece palette when using spare pieces mode
+
+4. **Updated `buildSparePiecesHTML()` function**
+   - Added 'wA' and 'bA' to the pieces arrays
+   - Spare archers can be dragged onto the board
+
+### Changes Made to index.html
+
+1. **Legal Move Highlighting**
+   - `highlightPossibleMoves()` function highlights all legal moves for a selected piece
+   - `onMouseoverSquare()` shows legal moves when hovering over pieces
+   - `onMouseoutSquare()` removes highlights when mouse leaves
+   - Uses CSS class `highlight-possible-move` for visual feedback
+
+2. **Move Validation**
+   - Integrates chess.js move validation with chessboard.js visual interface
+   - Prevents illegal moves with snapback animation
+   - Updates game state only after legal moves
+
+3. **Archer Support**
+   - Custom piece theme function loads archer images (wA.png, bA.png)
+   - Board initialized with FEN containing archer pieces
+   - Full drag-and-drop support for archer pieces
+
 ## Project Structure
 
 ```
 archerss/
 ├── docs/
-│   ├── chess.js           # Modified chess.js library with ARCHER piece
-│   ├── index.html         # Web interface for the game
-│   ├── server.js          # Simple Node.js web server
-│   ├── test_archer.js     # Test suite for ARCHER functionality
+│   ├── chess.js                    # Modified chess.js library with ARCHER piece
+│   ├── chessboard-1.0.0.js         # Modified chessboard.js to accept ARCHER pieces
+│   ├── index.html                  # Web interface with legal move highlighting
+│   ├── server.js                   # Simple Node.js web server
+│   ├── test_archer.js              # Test suite for ARCHER functionality
+│   ├── css/
+│   │   └── chessboard-1.0.0.css    # Chessboard styling
 │   └── img/
 │       └── chesspieces/
 │           └── wikipedia/
-│               ├── wA.png # White archer image
-│               ├── bA.png # Black archer image
-│               └── ...    # Other piece images
+│               ├── wA.png          # White archer image
+│               ├── bA.png          # Black archer image
+│               └── ...             # Other piece images
 └── README.md
 ```
 
@@ -166,9 +205,11 @@ All standard chess rules apply, with the addition of the ARCHER pieces:
 ## Technical Notes
 
 - Based on chess.js library by Jeff Hlywa
-- Uses chessboard.js for the visual board interface
+- Uses modified chessboard.js for the visual board interface with archer support
 - Piece images are from Wikipedia chess piece set
 - Current archer images use knight placeholders (can be replaced with custom artwork)
+- Legal move highlighting implemented using CSS and chess.js move generation
+- Fully interactive drag-and-drop interface with move validation
 
 ## Future Enhancements
 
