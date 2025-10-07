@@ -48,10 +48,11 @@ var Chess = function(fen) {
   var ROOK = 'r';
   var QUEEN = 'q';
   var KING = 'k';
+  var ARCHER = 'a';
 
-  var SYMBOLS = 'pnbrqkPNBRQK';
+  var SYMBOLS = 'pnbrqkaPNBRQKA';
 
-  var DEFAULT_POSITION = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  var DEFAULT_POSITION = 'rnbqkbnr/ppapappp/8/8/8/8/PPAPAPPP/RNBQKBNR w KQkq - 0 1';
 
   var POSSIBLE_RESULTS = ['1-0', '0-1', '1/2-1/2', '*'];
 
@@ -65,7 +66,8 @@ var Chess = function(fen) {
     b: [-17, -15,  17,  15],
     r: [-16,   1,  16,  -1],
     q: [-17, -16, -15,   1,  17, 16, 15,  -1],
-    k: [-17, -16, -15,   1,  17, 16, 15,  -1]
+    k: [-17, -16, -15,   1,  17, 16, 15,  -1],
+    a: [-17, -16, -15,   1,  17, 16, 15,  -1]
   };
 
   var ATTACKS = [
@@ -104,7 +106,7 @@ var Chess = function(fen) {
     -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
   ];
 
-  var SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 };
+  var SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5, a: 6 };
 
   var FLAGS = {
     NORMAL: 'n',
@@ -310,7 +312,7 @@ var Chess = function(fen) {
           sum_fields += parseInt(rows[i][k], 10);
           previous_was_number = true;
         } else {
-          if (!/^[prnbqkPRNBQK]$/.test(rows[i][k])) {
+          if (!/^[prnbqkaPRNBQKA]$/.test(rows[i][k])) {
             return {valid: false, error_number: 9, error: errors[9]};
           }
           sum_fields += 1;
@@ -563,12 +565,15 @@ var Chess = function(fen) {
               add_move(board, moves, i, square, BITS.NORMAL);
             } else {
               if (board[square].color === us) break;
-              add_move(board, moves, i, square, BITS.CAPTURE);
+              // Archer cannot capture
+              if (piece.type !== ARCHER) {
+                add_move(board, moves, i, square, BITS.CAPTURE);
+              }
               break;
             }
 
-            /* break, if knight or king */
-            if (piece.type === 'n' || piece.type === 'k') break;
+            /* break, if knight or king or archer */
+            if (piece.type === 'n' || piece.type === 'k' || piece.type === ARCHER) break;
           }
         }
       }
@@ -698,6 +703,9 @@ var Chess = function(fen) {
       var piece = board[i];
       var difference = i - square;
       var index = difference + 119;
+
+      // Archers cannot attack/capture
+      if (piece.type === ARCHER) continue;
 
       if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
         if (piece.type === PAWN) {
