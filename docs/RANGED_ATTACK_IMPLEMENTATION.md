@@ -13,6 +13,9 @@ Successfully implemented ranged attack capability for the ARCHER chess piece. Ar
 ### Attack Behavior
 - Archer **stays in its original position** after attacking
 - Target piece is **removed from the board**
+- **CAN attack the enemy king** - putting it in check and potentially delivering checkmate
+- **1-cell attacks** cannot be blocked (direct adjacent attacks)
+- **2-cell vertical attacks** can be blocked by a piece in between
 - Uses special notation with **`*` symbol** (e.g., `Ac2*e5`)
 
 ## Implementation Changes
@@ -38,13 +41,18 @@ if (piece.type === ARCHER) {
   
   // Ranged attacks - 1 cell in all directions
   for (var j = 0, len = PIECE_OFFSETS[piece.type].length; j < len; j++) {
-    // ... (attack adjacent enemy pieces)
+    // Can attack enemy pieces INCLUDING the king
+    if (board[square] != null && board[square].color === them) {
+      add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
+    }
   }
   
   // Ranged attacks - 2 cells vertically
-  // ... (attack 2 cells up/down)
+  // Can attack enemy pieces INCLUDING the king
 }
 ```
+
+**Important:** Archers CAN attack kings, putting them in check and delivering checkmate.
 
 ### 3. Modified make_move Function (line ~900)
 ```javascript
@@ -78,6 +86,32 @@ if (move.flags & BITS.ARCHER_ATTACK) {
 }
 ```
 
+### 6. Modified attacked() Function for Check Detection (line ~740)
+```javascript
+// Special handling for ARCHER ranged attacks
+if (piece.type === ARCHER) {
+  // 1. Adjacent squares (1 cell) - cannot be blocked
+  for (var k = 0; k < adjacentOffsets.length; k++) {
+    if (i + adjacentOffsets[k] === square) {
+      return true; // Archer threatens this square
+    }
+  }
+  
+  // 2. Vertical (2 cells) - CAN be blocked
+  if (i - 32 === square && board[i - 16] == null) {
+    return true; // Path is clear
+  } else if (i + 32 === square && board[i + 16] == null) {
+    return true; // Path is clear
+  }
+}
+```
+
+**Key Points:**
+- Archers now properly threaten squares for check detection
+- 1-cell attacks cannot be blocked (direct attacks)
+- 2-cell vertical attacks can be blocked by a piece in between
+- This allows archers to put kings in check and deliver checkmate
+
 ## Testing
 
 ### Test Suite Results
@@ -102,6 +136,18 @@ All 5 tests passing:
 - ✓ Archer Cannot Capture by Moving (updated to verify ranged attack)
 - ✓ Archer Moves to Empty Squares
 - ✓ Archer Does Not Attack (for check purposes)
+
+#### test_archer_checkmate.js
+All 7 tests passing:
+- ✓ Archer can put king in check (adjacent)
+- ✓ Archer can put king in check (2 cells vertical)
+- ✓ King must respond to check from archer
+- ✓ Archer can deliver checkmate
+- ✓ Archer ranged attack creates check
+- ✓ Piece can block vertical archer attack
+- ✓ Archer can check king diagonally (1 cell)
+
+**Total: 22 tests across 3 test suites, all passing ✓**
 
 ## Game Examples
 

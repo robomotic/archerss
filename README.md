@@ -14,8 +14,10 @@ The ARCHER is a unique chess piece with the following characteristics:
   - Attack range: **2 cells vertically** (straight up or down)
   - When attacking, the archer **stays in its original position**
   - The attacked piece is removed from the board
+  - **CAN attack the enemy king** - putting the king in check
   - Notation: Uses `*` symbol (e.g., `Ac2*e2` means archer at c2 attacks piece at e2)
-- **Threat**: Does not threaten squares for check purposes, so enemy kings can safely stand adjacent to archers
+- **Check and Checkmate**: Archers CAN put the king in check and deliver checkmate with ranged attacks
+- **Blocking**: The 2-cell vertical ranged attack CAN be blocked by a piece in between (1-cell attacks cannot be blocked)
 
 ### Starting Positions
 
@@ -143,19 +145,23 @@ FEN Notation: `rnbqkbnr/ppappapp/8/8/8/8/PPAPPAPP/RNBQKBNR w KQkq - 0 1`
 ```
 archerss/
 ├── docs/
-│   ├── chess.js                    # Modified chess.js library with ARCHER piece
-│   ├── chessboard-1.0.0.js         # Modified chessboard.js to accept ARCHER pieces
-│   ├── index.html                  # Web interface with legal move highlighting
-│   ├── server.js                   # Simple Node.js web server
-│   ├── test_archer.js              # Test suite for ARCHER functionality
+│   ├── chess.js                         # Modified chess.js library with ARCHER piece
+│   ├── chessboard-1.0.0.js              # Modified chessboard.js to accept ARCHER pieces
+│   ├── index.html                       # Web interface with legal move highlighting
+│   ├── demo.html                        # Interactive demo with test scenarios
+│   ├── server.js                        # Simple Node.js web server
+│   ├── RANGED_ATTACK_IMPLEMENTATION.md  # Technical implementation details
+│   ├── FINAL_IMPLEMENTATION.md          # Complete feature documentation
 │   ├── css/
-│   │   └── chessboard-1.0.0.css    # Chessboard styling
+│   │   └── chessboard-1.0.0.css         # Chessboard styling
 │   └── img/
 │       └── chesspieces/
 │           └── wikipedia/
-│               ├── wA.png          # White archer image
-│               ├── bA.png          # Black archer image
-│               └── ...             # Other piece images
+│               ├── wA.png               # White archer image
+│               ├── bA.png               # Black archer image
+│               └── ...                  # Other piece images
+├── tests/
+│   └── archer_tests.js                  # Comprehensive test suite (22 tests)
 └── README.md
 ```
 
@@ -163,45 +169,45 @@ archerss/
 
 ### Prerequisites
 
-- Node.js installed on your system
+- Node.js (v12.0.0 or higher) installed on your system
 
 ### Running the Game
 
-1. Navigate to the docs directory:
-   ```bash
-   cd docs
-   ```
+**Option 1: Using npm**
+```bash
+npm start
+```
 
-2. Start the server:
-   ```bash
-   node server.js
-   ```
+**Option 2: Direct command**
+```bash
+cd docs
+node server.js
+```
 
-3. Open your browser and navigate to:
-   ```
-   http://localhost:3000/
-   ```
+Then open your browser and navigate to:
+```
+http://localhost:3000/
+```
 
 ### Running Tests
 
-To verify the ARCHER piece implementation:
-
+**Option 1: Using npm**
 ```bash
-node docs/test_archer.js
+npm test
 ```
 
-Expected output:
+**Option 2: Direct command**
+```bash
+node tests/archer_tests.js
 ```
-Testing ARCHER piece...
 
-Test 1 - Initial Position: PASS ✓
-Test 2 - Archer Movement: PASS ✓
-Test 3 - Archer Cannot Capture: PASS ✓
-Test 4 - Archer Moves to Empty Squares: PASS ✓
-Test 5 - Archer Does Not Attack: PASS ✓
+This will run all 22 tests covering:
+- **Section 1**: Basic archer functionality (5 tests)
+- **Section 2**: Ranged attack mechanics (10 tests)
+- **Section 3**: Check and checkmate (7 tests)
 
-All tests completed!
-```
+All tests should show ✓ status.
+**Expected result: 22/22 tests passing (100% success rate)**
 
 ## Game Rules
 
@@ -210,12 +216,14 @@ All standard chess rules apply, with the addition of the ARCHER pieces:
 - Archers move one square in any direction (like kings) to empty squares only
 - Archers cannot capture enemy pieces by moving onto them
 - Archers can perform **ranged attacks**:
-  - Attack any enemy piece within 1 cell (8 adjacent squares)
-  - Attack any enemy piece 2 cells vertically up or down
+  - Attack any enemy piece within 1 cell (8 adjacent squares) - **cannot be blocked**
+  - Attack any enemy piece 2 cells vertically up or down - **can be blocked** by a piece in between
   - When attacking, the archer remains in its original position
   - The attacked piece is removed from the board
-- Archers do not threaten or attack squares for check purposes
-- Enemy pieces can safely occupy squares adjacent to archers
+  - **Archers CAN attack the king**, putting it in check
+- Archers can deliver **checkmate** with ranged attacks
+- Kings **must respond** to check from archers (move, block, or capture the archer)
+- Enemy pieces can safely occupy squares adjacent to archers (no passive threat)
 - Archers can be captured by enemy pieces
 - The goal remains to checkmate the opponent's king
 

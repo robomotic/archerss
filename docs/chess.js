@@ -577,7 +577,7 @@ var Chess = function(fen) {
           
           if (square & 0x88) continue;
           
-          // Can attack enemy pieces (archer stays in place)
+          // Can attack enemy pieces including kings (archer stays in place)
           if (board[square] != null && board[square].color === them) {
             add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
           }
@@ -590,7 +590,7 @@ var Chess = function(fen) {
           
           if (square & 0x88) continue;
           
-          // Can attack enemy pieces at 2 cells vertically (archer stays in place)
+          // Can attack enemy pieces at 2 cells vertically including kings (archer stays in place)
           if (board[square] != null && board[square].color === them) {
             add_move(board, moves, i, square, BITS.ARCHER_ATTACK);
           }
@@ -747,8 +747,32 @@ var Chess = function(fen) {
       var difference = i - square;
       var index = difference + 119;
 
-      // Archers cannot attack/capture
-      if (piece.type === ARCHER) continue;
+      // Special handling for ARCHER ranged attacks
+      if (piece.type === ARCHER) {
+        // Check if square is within archer's attack range
+        // 1. Adjacent squares (1 cell in all 8 directions)
+        var adjacentOffsets = [-17, -16, -15, 1, 17, 16, 15, -1];
+        for (var k = 0; k < adjacentOffsets.length; k++) {
+          if (i + adjacentOffsets[k] === square) {
+            return true; // Archer threatens this square (1 cell, can't be blocked)
+          }
+        }
+        
+        // 2. Vertical squares (2 cells up or down) - CAN be blocked
+        if (i - 32 === square) {
+          // Check 2 cells up - make sure path is clear
+          if (board[i - 16] == null) {
+            return true; // Archer threatens this square (2 cells up, not blocked)
+          }
+        } else if (i + 32 === square) {
+          // Check 2 cells down - make sure path is clear
+          if (board[i + 16] == null) {
+            return true; // Archer threatens this square (2 cells down, not blocked)
+          }
+        }
+        
+        continue; // Move to next piece
+      }
 
       if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
         if (piece.type === PAWN) {
