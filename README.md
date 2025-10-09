@@ -1,5 +1,7 @@
 # Archerss - Chess with Archer Pieces
 
+![Archerss Banner](concepts/2d/bigbanner.png)
+
 A modified chess game that introduces a new piece called the **ARCHER**.
 
 ## The ARCHER Piece
@@ -288,11 +290,45 @@ Move notation: Ac5*c7
 
 ## License
 
-Based on chess.js which is released under the BSD license.
+**Archerss** is free to play for personal, educational, and non-commercial use.
+
+### Trademark
+**"Archerss"** is a trademark of Paolo Di Prodi. All rights reserved.
+
+### Non-Commercial Use
+This project is licensed under the MIT License for non-commercial purposes:
+- ✅ Free for personal use
+- ✅ Free for educational purposes (schools, universities)
+- ✅ Free for open source projects
+- ✅ Free for non-profit organizations
+
+### Commercial Use
+Commercial exploitation **requires written permission** from the author. This includes:
+- Selling the game or derivative works
+- Using in commercial products or services
+- Monetization through ads, subscriptions, or in-app purchases
+- Integration into commercial platforms
+- Tournament organization with entry fees
+
+📧 **For commercial licensing inquiries:** paolo.diprodi@gmail.com
+
+See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for detailed information about commercial licensing options.
+
+### Third-Party Licenses
+This software incorporates:
+- **chess.js** by Jeff Hlywa - BSD License
+- **chessboard.js** by Chris Oakman - MIT License
+- **Chess piece images** - Creative Commons (Wikimedia)
+
+These components retain their original licenses.
+
+---
+
+**Copyright © 2025 Paolo Di Prodi. All rights reserved.**
 
 ## Credits
 
+- **ARCHER piece concept and implementation** by Paolo Di Prodi
 - chess.js library by Jeff Hlywa
 - chessboard.js by Chris Oakman
 - Chess piece images from Wikimedia Commons
-- ARCHER piece concept and implementation

@@ -1,4 +1,12 @@
 <!doctype html>
+<!--
+  Archerss - Chess with Archer Pieces
+  Copyright (c) 2025 Paolo Di Prodi
+  
+  "Archerss" is a trademark of Paolo Di Prodi
+  Non-commercial use: MIT License
+  Commercial use: Permission required - paolo.diprodi@gmail.com
+-->
 <html>
 <head>
   <meta charset="utf-8" />
@@ -118,6 +126,26 @@
     #resetButton:active {
       transform: scale(0.98);
     }
+    .checkbox-container {
+      background-color: #ecf0f1;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .checkbox-container label {
+      font-weight: bold;
+      color: #2c3e50;
+      cursor: pointer;
+      margin: 0;
+    }
   </style>
 </head>
 <body>
@@ -166,9 +194,24 @@
       <div id="myBoard" style="width: 400px"></div>
       
       <div class="game-info">
+        <div class="checkbox-container">
+          <input type="checkbox" id="randomCpuMode" checked>
+          <label for="randomCpuMode">🤖 Random CPU Mode (Black plays automatically)</label>
+        </div>
+        
+        <div class="checkbox-container">
+          <input type="checkbox" id="greedyCpuMode">
+          <label for="greedyCpuMode">🧠 Greedy CPU Mode (Black plays best move)</label>
+        </div>
+        
         <div class="info-box">
           <label>Status:</label>
           <div id="status"></div>
+        </div>
+        
+        <div class="info-box">
+          <label>Turn:</label>
+          <div id="turn"></div>
         </div>
         
         <div class="info-box">
