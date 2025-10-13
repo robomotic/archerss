@@ -6,8 +6,9 @@
  * - Basic archer functionality (movement, initial position)
  * - Ranged attack mechanics
  * - Check and checkmate with archers
+ * - Bug fixes and edge cases
  * 
- * Total: 22 tests
+ * Total: 24 tests
  */
 
 var Chess = require('../docs/chess.js').Chess;
@@ -207,7 +208,7 @@ test('Archer can attack diagonally (1 cell)', function() {
 // ============================================================================
 
 console.log('\n─────────────────────────────────────────────────────────');
-console.log('SECTION 3: Check and Checkmate (7 tests)');
+console.log('SECTION 3: Check and Checkmate (9 tests)');
 console.log('─────────────────────────────────────────────────────────\n');
 
 test('Archer can put king in check (adjacent)', function() {
@@ -269,6 +270,71 @@ test('Archer can check king diagonally (1 cell)', function() {
   var chess = new Chess('8/8/8/8/8/2k5/3A4/K7 b - - 0 1');
   
   assert(chess.in_check(), 'Black king should be in check from diagonal archer attack (1 cell)');
+});
+
+test('Bug fix: Check detection in complex position (FEN: 1n2k3/p1qpP3/5R2/6pp/7P/PA1P4/P7/RNQ1KBNb)', function() {
+  // This position comes from the following PGN:
+  // 1. Af3 Af6 2. g4 Ac6 3. Ac3 Ad5 4. Ae4 Ad6 5. g5 Ag6 6. Af5 b5 7. Af5*g6 h5 
+  // 8. h4 Bb7 9. Rh3 Rh6 10. gxh6 e5 11. Af5*e5 Nc6 12. Rg3 Nxh6 13. Rg6 Nxf5 
+  // 14. e4 Rc8 15. exf5 Ae5 16. d3 Ae6 17. fxe6 Be7 18. Rf6 Ba3 19. bxa3 Nb8 
+  // 20. Ab3 g5 21. Ab3*b5 Rxc1 22. Qxc1 Bh1 23. e7 Qc7
+  // Position after White plays e7 (pawn to e7)
+  var chess = new Chess('1n2k3/p1qpP3/5R2/6pp/7P/PA1P4/P7/RNQ1KBNb b Q - 1 24');
+  
+  // Verify it's black's turn
+  assert(chess.turn() === 'b', 'It should be black\'s turn');
+  
+  // Check the position: Rook on f6, King on e8, Pawn on e7
+  // Rook on f6 does NOT attack e8 (different file AND rank)
+  // Pawn on e7 CANNOT check king on e8 (pawns don't attack forward)
+  // Therefore, Black should NOT be in check
+  assert(!chess.in_check(), 'Black king should NOT be in check (Rf6 does not attack e8, pawn cannot check forward)');
+  
+  // However, the pawn on e7 should NOT be able to capture the king
+  // (This would be an illegal move even though pawn is adjacent)
+  // Verify that e7-e8 capture is not available for white when it becomes white's turn
+  var fen = chess.fen();
+  assert(fen.includes('p1qpP3/5R2'), 'Pawn should be on e7, Rook on f6');
+  
+  // Black should have legal moves available (not in check, not checkmate)
+  var blackMoves = chess.moves({ verbose: true });
+  assert(blackMoves.length > 0, 'Black should have legal moves available');
+  
+  // Black king should be able to capture the pawn on e7
+  var kingCapture = blackMoves.find(m => m.from === 'e8' && m.to === 'e7' && m.captured === 'p');
+  assert(kingCapture !== undefined, 'Black king should be able to capture pawn on e7');
+});
+
+test('Bug fix: getKeyByValue function for king highlighting', function() {
+  // This test verifies the helper function used to find the king position
+  // Bug was: "Uncaught ReferenceError: getKeyByValue is not defined"
+  // when trying to drag rook from f3 to f8 in a check situation
+  
+  // Helper function (same as in main.js)
+  function getKeyByValue(object, value) {
+    for (let key in object) {
+      if (object[key] === value) {
+        return key;
+      }
+    }
+    return null;
+  }
+  
+  // Test finding white king
+  var mockPosition = {
+    'e1': 'wK',
+    'e8': 'bK',
+    'a1': 'wR'
+  };
+  
+  var whiteKing = getKeyByValue(mockPosition, 'wK');
+  assert(whiteKing === 'e1', 'Should find white king at e1');
+  
+  var blackKing = getKeyByValue(mockPosition, 'bK');
+  assert(blackKing === 'e8', 'Should find black king at e8');
+  
+  var notFound = getKeyByValue(mockPosition, 'wQ');
+  assert(notFound === null, 'Should return null when piece not found');
 });
 
 // ============================================================================

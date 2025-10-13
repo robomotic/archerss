@@ -202,6 +202,16 @@ function makeBestMove(){
 }
 
 
+// Helper function to find a square by piece value
+function getKeyByValue(object, value) {
+  for (let key in object) {
+    if (object[key] === value) {
+      return key;
+    }
+  }
+  return null;
+}
+
 function redSquare(square){
   let $square = $('#board .square-' + square)
 
