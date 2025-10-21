@@ -3,3 +3,7 @@ LICENSE_QUICKREF.md
 LICENSING_SUMMARY.md
 COMMERCIAL_LICENSE.md
 BUG_FIX_getKeyByValue.md
+.kiro/specs/minimax-cpu-mode/design.md
+.kiro/specs/minimax-cpu-mode/requirements.md
+.kiro/specs/minimax-cpu-mode/tasks.md
+.vscode/settings.json

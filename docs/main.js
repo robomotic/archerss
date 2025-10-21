@@ -34,6 +34,13 @@ let pieceValues = {
   k: 900
 }
 
+// Minimax configuration constants
+const MINIMAX_CONFIG = {
+  defaultDepth: 3,        // Search depth for minimax
+  maxThinkingTime: 5000,  // Maximum time per move (ms)
+  debugMode: true         // Enable console logging
+}
+
 // Helper function to get the board as a 2D array
 function getBoardAs2DArray() {
   let board2d = []
@@ -201,6 +208,64 @@ function makeBestMove(){
   updateStatus();
 }
 
+function makeMinimaxMove(){
+  console.log('=== makeMinimaxMove called ===')
+  
+  if (game.game_over()) {
+    console.log('Game is over, no move to make')
+    return
+  }
+  
+  // Clear transposition table for new search
+  clearTranspositionTable()
+  
+  let startTime = Date.now()
+  
+  // Use minimax algorithm to find the best move
+  let [bestMove, evaluation] = minimax(game, MINIMAX_CONFIG.defaultDepth, -Infinity, +Infinity, game.turn() === 'w')
+  
+  let endTime = Date.now()
+  let thinkingTime = endTime - startTime
+  
+  if (MINIMAX_CONFIG.debugMode) {
+    console.log(`Minimax thinking time: ${thinkingTime}ms`)
+    console.log(`Best move found: ${bestMove}`)
+    console.log(`Position evaluation: ${evaluation}`)
+    console.log(`Search depth: ${MINIMAX_CONFIG.defaultDepth}`)
+    console.log(`Transposition table size: ${transpositionTable.size} positions cached`)
+  }
+  
+  if (bestMove == null) {
+    console.log('No best move found (game over)')
+    return
+  }
+  
+  // Get detailed move information for logging
+  let moveDetails = game.moves({ verbose: true }).find(m => m.san === bestMove || m.from + m.to === bestMove)
+  
+  if (moveDetails && MINIMAX_CONFIG.debugMode) {
+    let pieceNames = {
+      'p': 'Pawn',
+      'n': 'Knight', 
+      'b': 'Bishop',
+      'r': 'Rook',
+      'q': 'Queen',
+      'k': 'King',
+      'a': 'Archer'
+    }
+    let pieceName = pieceNames[moveDetails.piece] || moveDetails.piece
+    let color = moveDetails.color === 'w' ? 'White' : 'Black'
+    
+    console.log(`Minimax selected: ${color} ${pieceName} from ${moveDetails.from} to ${moveDetails.to}`)
+  }
+  
+  // Execute the move
+  game.move(bestMove)
+  board.position(game.fen())
+  removeRedSquares()
+  updateStatus()
+}
+
 
 // Helper function to find a square by piece value
 function getKeyByValue(object, value) {
@@ -273,6 +338,109 @@ function onDragStart (source, piece, position, orientation) {
   highlightPossibleMoves(source)
 }
 
+// Fisher-Yates shuffle for move ordering
+function shuffle(array){
+  for(let j, x, i = array.length; i; j = Math.floor(Math.random() * i), x = array[--i], array[i] = array[j], array[j] = x);
+  return array;
+}
+
+// Transposition table for caching position evaluations
+let transpositionTable = new Map();
+
+// Clear transposition table (call before starting a new search)
+function clearTranspositionTable() {
+  transpositionTable.clear();
+}
+
+// minimax function for human vs CPU with transposition table
+function minimax(position, depth, alpha, beta, maximizing_player){
+  // Check transposition table for previously evaluated position
+  let positionKey = position.fen();
+  if (transpositionTable.has(positionKey)) {
+    let cached = transpositionTable.get(positionKey);
+    // Use cached result if it was searched at equal or greater depth
+    if (cached.depth >= depth) {
+      return [cached.move, cached.evaluation];
+    }
+  }
+
+  // if terminal state (game over) or max depth (depth == 0)
+  if (position.in_checkmate() || position.in_draw() || depth == 0){
+    let evaluation = evaluateBoard(getBoardAs2DArray());
+    // Store in transposition table
+    transpositionTable.set(positionKey, {
+      depth: depth,
+      evaluation: evaluation,
+      move: null
+    });
+    return [null, evaluation];
+  }
+
+  let bestMove;
+  if (maximizing_player) {
+    // find move with best possible score
+    let maxEval = -Infinity;
+    let possibleMoves = shuffle(position.moves());
+    for (let i = 0; i < possibleMoves.length; i++) {
+
+      position.move(possibleMoves[i])
+      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, false)
+      if (childEval > maxEval) {
+        maxEval = childEval;
+        bestMove = possibleMoves[i]
+      }
+      position.undo()
+
+      // alpha beta pruning
+      alpha = Math.max(alpha, childEval)
+      if (beta <= alpha) {
+        break;
+      }
+    }
+    
+    // Store result in transposition table
+    transpositionTable.set(positionKey, {
+      depth: depth,
+      evaluation: maxEval,
+      move: bestMove
+    });
+    
+    return [bestMove, maxEval];
+
+  } else {
+    // find move with worst possible score (for maximizer)
+    let minEval = +Infinity;
+    let possibleMoves = shuffle(position.moves());
+    for (let i = 0; i < possibleMoves.length; i++) {
+
+      position.move(possibleMoves[i])
+      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, true)
+      if (childEval < minEval) {
+        minEval = childEval;
+        bestMove = possibleMoves[i]
+      }
+      position.undo()
+
+      // alpha beta pruning
+      beta = Math.min(beta, childEval)
+      if (beta <= alpha) {
+        break;
+      }
+    }
+    
+    // Store result in transposition table
+    transpositionTable.set(positionKey, {
+      depth: depth,
+      evaluation: minEval,
+      move: bestMove
+    });
+    
+    return [bestMove, minEval];
+  }
+
+}
+
+
 function makeRandomMove(){
   let possibleMoves = game.moves();
 
@@ -318,8 +486,12 @@ function onDrop (source, target) {
     window.setTimeout(makeRandomMove, 250);
   }
   // if user has selected greedy CPU mode
-    if ($('#greedyCpuMode').is(':checked')) {
+  else if ($('#greedyCpuMode').is(':checked')) {
     window.setTimeout(makeBestMove, 250);
+  }
+  // if user has selected minimax CPU mode
+  else if ($('#minimaxCpuMode').is(':checked')) {
+    window.setTimeout(makeMinimaxMove, 250);
   }
 }
 
@@ -439,16 +611,25 @@ function initBoard() {
 $(document).ready(function() {
   initBoard()
 
-  // Make Random CPU and Greedy CPU modes mutually exclusive
+  // Make CPU modes mutually exclusive
   $('#randomCpuMode').on('change', function() {
     if ($(this).is(':checked')) {
       $('#greedyCpuMode').prop('checked', false)
+      $('#minimaxCpuMode').prop('checked', false)
     }
   })
 
   $('#greedyCpuMode').on('change', function() {
     if ($(this).is(':checked')) {
       $('#randomCpuMode').prop('checked', false)
+      $('#minimaxCpuMode').prop('checked', false)
+    }
+  })
+
+  $('#minimaxCpuMode').on('change', function() {
+    if ($(this).is(':checked')) {
+      $('#randomCpuMode').prop('checked', false)
+      $('#greedyCpuMode').prop('checked', false)
     }
   })
 
