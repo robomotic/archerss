@@ -4,6 +4,10 @@
 
 A modified chess game that introduces a new piece called the **ARCHER**.
 
+## 🎮 Live Demo
+
+**[Play Archerss Online](https://robomotic.github.io/archerss/index.html)** - Single player only (play against yourself)
+
 ## The ARCHER Piece
 
 The ARCHER is a unique chess piece with the following characteristics:
@@ -310,7 +314,7 @@ Commercial exploitation **requires written permission** from the author. This in
 - Integration into commercial platforms
 - Tournament organization with entry fees
 
-📧 **For commercial licensing inquiries:** paolo.diprodi@gmail.com
+📧 **For commercial licensing inquiries:** create an issue on github
 
 See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for detailed information about commercial licensing options.
 
