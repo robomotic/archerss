@@ -38,7 +38,8 @@ let pieceValues = {
 const MINIMAX_CONFIG = {
   defaultDepth: 3,        // Search depth for minimax
   maxThinkingTime: 5000,  // Maximum time per move (ms)
-  debugMode: true         // Enable console logging
+  debugMode: true,        // Enable console logging
+  moveOrdering: false     // Enable move ordering heuristics (set to true for better performance)
 }
 
 // Helper function to get the board as a 2D array
@@ -221,8 +222,8 @@ function makeMinimaxMove(){
   
   let startTime = Date.now()
   
-  // Use minimax algorithm to find the best move
-  let [bestMove, evaluation] = minimax(game, MINIMAX_CONFIG.defaultDepth, -Infinity, +Infinity, game.turn() === 'w')
+  // Use minimax algorithm to find the best move with optional move ordering
+  let [bestMove, evaluation] = minimax(game, MINIMAX_CONFIG.defaultDepth, -Infinity, +Infinity, game.turn() === 'w', MINIMAX_CONFIG.moveOrdering)
   
   let endTime = Date.now()
   let thinkingTime = endTime - startTime
@@ -232,6 +233,7 @@ function makeMinimaxMove(){
     console.log(`Best move found: ${bestMove}`)
     console.log(`Position evaluation: ${evaluation}`)
     console.log(`Search depth: ${MINIMAX_CONFIG.defaultDepth}`)
+    console.log(`Move ordering: ${MINIMAX_CONFIG.moveOrdering ? 'ENABLED' : 'DISABLED'}`)
     console.log(`Transposition table size: ${transpositionTable.size} positions cached`)
   }
   
@@ -352,8 +354,97 @@ function clearTranspositionTable() {
   transpositionTable.clear();
 }
 
-// minimax function for human vs CPU with transposition table
-function minimax(position, depth, alpha, beta, maximizing_player){
+// Enhanced piece values for move ordering heuristics
+const PIECE_VALUES_ORDERING = {
+  'p': 100,   // Pawn
+  'n': 320,   // Knight
+  'b': 330,   // Bishop
+  'r': 500,   // Rook
+  'q': 900,   // Queen
+  'k': 20000, // King
+  'a': 350    // Archer (between knight and rook)
+};
+
+/**
+ * Score a move based on multiple heuristics for move ordering
+ * Higher scores = more promising moves (should be searched first)
+ */
+function scoreMoveForOrdering(moveDetails) {
+  let score = 0;
+  
+  if (!moveDetails || !moveDetails.san) return 0;
+  
+  // 1. MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
+  // This is the most important heuristic for alpha-beta pruning
+  if (moveDetails.captured) {
+    const victimValue = PIECE_VALUES_ORDERING[moveDetails.captured] || 0;
+    const attackerValue = PIECE_VALUES_ORDERING[moveDetails.piece] || 0;
+    // Capturing high-value pieces with low-value pieces is best
+    score += 10 * victimValue - attackerValue;
+  }
+  
+  // 2. Archer ranged attacks (special consideration)
+  if (moveDetails.flags && moveDetails.flags.includes('a')) { // Archer attack flag
+    score += 5000; // Prioritize ranged attacks
+    if (moveDetails.captured === 'q') score += 3000; // Especially queen captures
+  }
+  
+  // 3. Promotions are valuable
+  if (moveDetails.promotion) {
+    score += PIECE_VALUES_ORDERING[moveDetails.promotion] || 0;
+  }
+  
+  // 4. Center control (moves to d4, d5, e4, e5)
+  const centerSquares = ['d4', 'd5', 'e4', 'e5'];
+  if (centerSquares.includes(moveDetails.to)) {
+    score += 100;
+  }
+  
+  // 5. Castling is generally good
+  if (moveDetails.flags && (moveDetails.flags.includes('k') || moveDetails.flags.includes('q'))) {
+    score += 500;
+  }
+  
+  // 6. Check detection via the + or # suffix in SAN notation
+  // This avoids expensive trial moves
+  if (moveDetails.san.includes('+')) {
+    score += 8000; // Check
+  }
+  if (moveDetails.san.includes('#')) {
+    score += 100000; // Checkmate
+  }
+  
+  return score;
+}
+
+/**
+ * Order moves from most to least promising
+ */
+function orderMoves(position, moves) {
+  // Get verbose move information once for all moves
+  const verboseMoves = position.moves({ verbose: true });
+  
+  // Create a map for quick lookup - use both SAN and algebraic notation
+  const moveMap = new Map();
+  verboseMoves.forEach(vm => {
+    moveMap.set(vm.san, vm);
+    moveMap.set(vm.from + vm.to, vm);
+  });
+  
+  // Score each move
+  const scoredMoves = moves.map(move => ({
+    move: move,
+    score: scoreMoveForOrdering(moveMap.get(move))
+  }));
+  
+  // Sort descending by score
+  scoredMoves.sort((a, b) => b.score - a.score);
+  
+  return scoredMoves.map(sm => sm.move);
+}
+
+// minimax function for human vs CPU with transposition table and optional move ordering
+function minimax(position, depth, alpha, beta, maximizing_player, move_ordering = false){
   // Check transposition table for previously evaluated position
   let positionKey = position.fen();
   if (transpositionTable.has(positionKey)) {
@@ -380,11 +471,19 @@ function minimax(position, depth, alpha, beta, maximizing_player){
   if (maximizing_player) {
     // find move with best possible score
     let maxEval = -Infinity;
-    let possibleMoves = shuffle(position.moves());
+    let possibleMoves = position.moves();
+    
+    // Apply move ordering if enabled, otherwise shuffle randomly
+    if (move_ordering) {
+      possibleMoves = orderMoves(position, possibleMoves);
+    } else {
+      possibleMoves = shuffle(possibleMoves);
+    }
+    
     for (let i = 0; i < possibleMoves.length; i++) {
 
       position.move(possibleMoves[i])
-      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, false)
+      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, false, move_ordering)
       if (childEval > maxEval) {
         maxEval = childEval;
         bestMove = possibleMoves[i]
@@ -410,11 +509,19 @@ function minimax(position, depth, alpha, beta, maximizing_player){
   } else {
     // find move with worst possible score (for maximizer)
     let minEval = +Infinity;
-    let possibleMoves = shuffle(position.moves());
+    let possibleMoves = position.moves();
+    
+    // Apply move ordering if enabled, otherwise shuffle randomly
+    if (move_ordering) {
+      possibleMoves = orderMoves(position, possibleMoves);
+    } else {
+      possibleMoves = shuffle(possibleMoves);
+    }
+    
     for (let i = 0; i < possibleMoves.length; i++) {
 
       position.move(possibleMoves[i])
-      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, true)
+      let [childBestMove, childEval] = minimax(position, depth - 1, alpha, beta, true, move_ordering)
       if (childEval < minEval) {
         minEval = childEval;
         bestMove = possibleMoves[i]
