@@ -146,6 +146,16 @@
       cursor: pointer;
       margin: 0;
     }
+    .sub-option {
+      margin-left: 30px;
+      background-color: #d5dbdb !important;
+      border-left: 3px solid #3498db;
+      font-size: 0.95em;
+    }
+    .sub-option label {
+      font-weight: normal;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
@@ -207,6 +217,11 @@
         <div class="checkbox-container">
           <input type="checkbox" id="minimaxCpuMode">
           <label for="minimaxCpuMode">🎯 Minimax CPU Mode (Black uses minimax algorithm)</label>
+        </div>
+        
+        <div class="checkbox-container sub-option">
+          <input type="checkbox" id="moveOrderingMode">
+          <label for="moveOrderingMode">⚡ Enable Move Ordering (faster search with heuristics)</label>
         </div>
         
         <div class="info-box">

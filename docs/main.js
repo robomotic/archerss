@@ -740,6 +740,12 @@ $(document).ready(function() {
     }
   })
 
+  // Handle move ordering checkbox
+  $('#moveOrderingMode').on('change', function() {
+    MINIMAX_CONFIG.moveOrdering = $(this).is(':checked')
+    console.log(`Move ordering ${MINIMAX_CONFIG.moveOrdering ? 'ENABLED' : 'DISABLED'}`)
+  })
+
   $('#resetButton').on('click', function(){
     // Reset the game state to the archer starting position
     game.load(ARCHER_START_FEN)
